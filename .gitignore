@@ -42,7 +42,7 @@ ENV/
 .python-version
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # Lean
 .lake/
