@@ -1,8 +1,2 @@
-# Core dependencies for Streamlit Cloud deployment
-streamlit>=1.31.0
-pandas>=2.0.0
-
-# Optional: Only needed if using Aristotle API in the app
-# aristotlelib>=0.7.0
-
-# Note: numpy is included by pandas, no need to specify separately
+streamlit
+pandas
