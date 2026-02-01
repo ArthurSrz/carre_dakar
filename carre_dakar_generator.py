@@ -28,6 +28,67 @@ class Cell:
     cell_type: CellType
     hidden: bool = False
 
+
+def get_cell_type_from_value(value: str) -> Optional[CellType]:
+    """Determine cell type from string value"""
+    if value is None or value == ' ':
+        return None
+    if value.replace('-', '').isdigit():
+        return CellType.NUMBER
+    if value == '=':
+        return CellType.EQUALS
+    if value in ['+', '-', '×', '*']:
+        return CellType.OPERATOR
+    return None
+
+
+def get_expected_checkerboard_type(row: int, col: int) -> CellType:
+    """
+    Get expected cell type based on checkerboard pattern.
+
+    Rules:
+    - (even, even) -> NUMBER
+    - (even, odd) -> OPERATOR
+    - (odd, odd) -> NUMBER
+    - (odd, even) -> OPERATOR
+    """
+    if (row % 2 == 0 and col % 2 == 0) or (row % 2 == 1 and col % 2 == 1):
+        return CellType.NUMBER
+    else:
+        return CellType.OPERATOR
+
+
+def validate_checkerboard_pattern(grid: List[List[Optional[Cell]]], n: int) -> Tuple[bool, List[str]]:
+    """
+    Validate that grid follows checkerboard pattern.
+
+    Returns:
+        (is_valid, list_of_errors)
+    """
+    errors = []
+
+    for i in range(n):
+        for j in range(n):
+            cell = grid[i][j]
+            if cell is None:
+                continue
+
+            expected_type = get_expected_checkerboard_type(i, j)
+            actual_type = cell.cell_type
+
+            # EQUALS is considered OPERATOR for checkerboard
+            if actual_type == CellType.EQUALS:
+                actual_type = CellType.OPERATOR
+
+            if actual_type != expected_type:
+                errors.append(
+                    f"Position ({i},{j}): expected {expected_type.value}, "
+                    f"found {cell.cell_type.value} ('{cell.value}')"
+                )
+
+    return len(errors) == 0, errors
+
+
 class CarreDakarGrid:
     """
     Carré de Dakar puzzle grid generator
@@ -72,6 +133,111 @@ class CarreDakarGrid:
         except Exception as e:
             print(f"Error during generation: {e}")
             return False
+
+    def generate_checkerboard_pattern(self) -> bool:
+        """
+        Generate a valid grid respecting checkerboard pattern.
+
+        Strategy:
+        - Even rows: Build equations NUM OP NUM OP ... = RESULT
+        - Odd rows: Fill with OP NUM OP NUM pattern
+        - Validate checkerboard compliance
+
+        Returns:
+            True if successful, False otherwise
+        """
+        print(f"Generating {self.n}×{self.n} grid with checkerboard pattern...")
+
+        try:
+            # Initialize empty grid
+            self.grid = [[None] * self.n for _ in range(self.n)]
+
+            # Generate equations on even rows (0, 2, 4, ...)
+            for i in range(0, self.n, 2):
+                self._generate_checkerboard_row(i)
+
+            # Fill odd rows to complete vertical equations
+            for i in range(1, self.n, 2):
+                self._fill_checkerboard_odd_row(i)
+
+            # Validate checkerboard pattern
+            is_valid, errors = validate_checkerboard_pattern(self.grid, self.n)
+
+            if not is_valid:
+                print("❌ Checkerboard validation failed:")
+                for error in errors[:10]:
+                    print(f"   {error}")
+                return False
+
+            print("✅ Checkerboard pattern validated successfully")
+            return True
+
+        except Exception as e:
+            print(f"Error during checkerboard generation: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _generate_checkerboard_row(self, row: int):
+        """
+        Generate equation for even row respecting checkerboard.
+        Pattern: NUM OP NUM OP NUM = RESULT
+        """
+        # Find valid position for equals (odd column, with room for result)
+        possible_eq_cols = [j for j in range(3, self.n - 1, 2)]
+        if not possible_eq_cols:
+            possible_eq_cols = [j for j in range(1, self.n, 2)]
+
+        equals_col = random.choice(possible_eq_cols)
+
+        # Build left side of equation
+        numbers = []
+        operators = []
+
+        for col in range(equals_col):
+            if col % 2 == 0:  # Even col = NUMBER
+                num = random.randint(1, min(10, self.max_number))
+                self.grid[row][col] = Cell(str(num), CellType.NUMBER)
+                numbers.append(num)
+            else:  # Odd col = OPERATOR
+                op = random.choice([Operator.ADD, Operator.MUL])
+                self.grid[row][col] = Cell(op.value, CellType.OPERATOR)
+                operators.append(op)
+
+        # Calculate result (left-to-right evaluation)
+        result = numbers[0]
+        for i, op in enumerate(operators):
+            if op == Operator.ADD:
+                result += numbers[i + 1]
+            elif op == Operator.MUL:
+                result *= numbers[i + 1]
+
+        # Place equals and result
+        self.grid[row][equals_col] = Cell("=", CellType.EQUALS)
+
+        result_col = equals_col + 1
+        if result_col < self.n:
+            self.grid[row][result_col] = Cell(str(result), CellType.NUMBER)
+
+        # Fill remaining cells following checkerboard
+        for col in range(result_col + 1, self.n):
+            if col % 2 == 0:
+                self.grid[row][col] = Cell('1', CellType.NUMBER)
+            else:
+                self.grid[row][col] = Cell('+', CellType.OPERATOR)
+
+    def _fill_checkerboard_odd_row(self, row: int):
+        """
+        Fill odd row following checkerboard pattern.
+        Pattern: OP NUM OP NUM OP
+        """
+        for col in range(self.n):
+            if col % 2 == 0:  # Even col = OPERATOR for odd row
+                op = random.choice([Operator.ADD, Operator.MUL])
+                self.grid[row][col] = Cell(op.value, CellType.OPERATOR)
+            else:  # Odd col = NUMBER for odd row
+                num = random.randint(1, min(10, self.max_number))
+                self.grid[row][col] = Cell(str(num), CellType.NUMBER)
 
     def _create_equation_block(self, row: int, col: int):
         """

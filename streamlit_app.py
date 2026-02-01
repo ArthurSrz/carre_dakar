@@ -111,6 +111,49 @@ class CarreDakarGenerator:
 
         return True
 
+    def generate_checkerboard(self) -> bool:
+        """Génère une grille avec contrainte de damier"""
+        self.grid = [[' ' for _ in range(self.n)] for _ in range(self.n)]
+
+        # Générer équations sur lignes paires
+        for i in range(0, self.n, 2):
+            self._create_checkerboard_row(i)
+
+        # Remplir lignes impaires
+        for i in range(1, self.n, 2):
+            self._fill_checkerboard_odd_row(i)
+
+        return True
+
+    def _create_checkerboard_row(self, row: int):
+        """Crée une ligne paire suivant le damier"""
+        equals_col = random.choice([j for j in range(3, self.n-1, 2)])
+
+        numbers = []
+        for col in range(equals_col):
+            if col % 2 == 0:
+                num = random.randint(1, min(9, self.max_number))
+                self.grid[row][col] = str(num)
+                numbers.append(num)
+            else:
+                self.grid[row][col] = '+'
+
+        result = sum(numbers)
+        self.grid[row][equals_col] = '='
+        if equals_col + 1 < self.n:
+            self.grid[row][equals_col + 1] = str(result)
+
+        for col in range(equals_col + 2, self.n):
+            self.grid[row][col] = '1' if col % 2 == 0 else '+'
+
+    def _fill_checkerboard_odd_row(self, row: int):
+        """Remplit une ligne impaire suivant le damier"""
+        for col in range(self.n):
+            if col % 2 == 0:
+                self.grid[row][col] = '+'
+            else:
+                self.grid[row][col] = str(random.randint(1, min(9, self.max_number)))
+
     def _create_valid_block(self, start_row: int, start_col: int):
         """Crée un bloc 5×5 avec des équations valides garanties"""
         # Générer des nombres aléatoires
@@ -273,6 +316,13 @@ def main():
         help="Valeur maximale pour les nombres dans les équations"
     )
 
+    st.sidebar.header("🎯 Contrainte de Damier")
+    use_checkerboard = st.sidebar.checkbox(
+        "Appliquer le motif en damier",
+        value=True,
+        help="Force l'alternance: (pair,pair)=NOMBRE, (pair,impair)=OPÉRATEUR"
+    )
+
     # Mode puzzle
     st.sidebar.header("🧩 Mode Puzzle")
     puzzle_mode = st.sidebar.checkbox("Activer le mode puzzle", value=False)
@@ -298,7 +348,16 @@ def main():
     if 'generator' not in st.session_state or st.session_state.get('need_regenerate', True):
         with st.spinner(f"Génération d'une grille {grid_size}×{grid_size}..."):
             generator = CarreDakarGenerator(n=grid_size, max_number=max_number)
-            generator.generate()
+
+            # Use checkerboard if enabled
+            if use_checkerboard:
+                success = generator.generate_checkerboard()
+            else:
+                success = generator.generate()
+
+            if not success:
+                st.error("⚠️ Échec de la génération")
+                st.stop()
 
             if puzzle_mode:
                 generator.hide_numbers(hide_percentage)
@@ -340,6 +399,45 @@ def main():
         if puzzle_mode:
             st.metric("Nombres cachés", len(generator.hidden_cells))
             st.metric("Pourcentage caché", f"{hide_percentage*100:.0f}%")
+
+    # Display checkerboard validation if enabled
+    if use_checkerboard:
+        st.markdown("---")
+        st.subheader("🎯 Validation du Damier")
+
+        # Validate pattern
+        errors = []
+        for i in range(generator.n):
+            for j in range(generator.n):
+                cell = generator.grid[i][j]
+                if cell == ' ':
+                    continue
+
+                # Determine expected type
+                if (i % 2 == 0 and j % 2 == 0) or (i % 2 == 1 and j % 2 == 1):
+                    expected = "nombre"
+                else:
+                    expected = "opérateur"
+
+                # Determine actual type
+                if cell.isdigit():
+                    actual = "nombre"
+                elif cell in ['+', '-', '×', '*', '=']:
+                    actual = "opérateur"
+                else:
+                    actual = "inconnu"
+
+                # Check match (= counts as operator)
+                if actual != expected:
+                    errors.append(f"Position ({i},{j}): attendu {expected}, trouvé {actual} ('{cell}')")
+
+        if not errors:
+            st.success(f"✅ Motif en damier parfait ({generator.n}×{generator.n})")
+        else:
+            st.error(f"❌ {len(errors)} violations du damier")
+            with st.expander("Voir les erreurs"):
+                for error in errors[:20]:
+                    st.text(error)
 
     # Section de validation détaillée
     st.markdown("---")

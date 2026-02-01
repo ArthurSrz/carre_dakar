@@ -24,7 +24,31 @@ The "Carré de Dakar" is a mathematical puzzle defined as follows:
    - Standard operator precedence applies (× before +/-)
    - All equations must evaluate to true
 
-3. **Puzzle Mode:**
+3. **Checkerboard Pattern Constraint:**
+   - The grid follows a strict positional alternating pattern
+   - Position (even_row, even_col): Must contain NUMBER
+   - Position (even_row, odd_col): Must contain OPERATOR or EQUALS
+   - Position (odd_row, odd_col): Must contain NUMBER
+   - Position (odd_row, even_col): Must contain OPERATOR or EQUALS
+
+   **Visual pattern:**
+   ```
+   N O N O N O N O N O
+   O N O N O N O N O N
+   N O N O N O N O N O
+   O N O N O N O N O N
+   ...
+   ```
+
+   **Equation implications:**
+   - Even rows: NUM OP NUM OP NUM ... = RESULT
+   - Odd rows: OP NUM OP NUM OP ... (often incomplete)
+   - Even columns: NUM OP NUM OP NUM ... = RESULT
+   - Odd columns: OP NUM OP NUM OP ... (often incomplete)
+
+   Note: EQUALS (=) is treated as an OPERATOR for pattern purposes.
+
+4. **Puzzle Mode:**
    - After generating a valid grid, hide certain numbers (replace with "?")
    - The hidden numbers should be uniquely determinable from the visible information
 
