@@ -2,6 +2,7 @@
 
 > Un puzzle mathématique innovant où il faut remplir une grille n×n avec des nombres et des opérateurs (+, -, ×, =) pour que toutes les équations soient valides, à la fois horizontalement et verticalement.
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://carre-dakar.streamlit.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Lean 4](https://img.shields.io/badge/Lean-4.24.0-green.svg)](https://leanprover.github.io/)
@@ -39,12 +40,12 @@ python3 demo_complete.py
 
 ### Application Web Interactive
 
+**🌐 Version en ligne:** https://carre-dakar.streamlit.app
+
+Ou lancez localement:
 ```bash
-# Lancer l'application Streamlit
 streamlit run streamlit_app.py
 ```
-
-L'application s'ouvre automatiquement à `http://localhost:8501` 🎮
 
 ---
 
