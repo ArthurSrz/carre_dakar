@@ -1,0 +1,34 @@
+Theorem: Existence of Solutions for Carré de Dakar
+
+Statement: For every integer n greater than 3, there exists at least one valid n×n grid configuration for the Carré de Dakar puzzle.
+
+Definitions:
+- Let n be a positive integer, n > 3
+- A Carré de Dakar grid G is an n×n matrix
+- Each cell G[i,j] contains either:
+  * A positive integer (number)
+  * An arithmetic operator from the set {+, -, ×}
+  * An equals sign (=)
+
+Validity Conditions:
+1. Every row and every column must form at least one valid arithmetic equation
+2. An arithmetic equation has the form: a₁ op₁ a₂ op₂ ... opₖ aₖ₊₁ = result
+   where aᵢ are positive integers and opᵢ ∈ {+, -, ×}
+3. Equations are evaluated left-to-right with standard operator precedence (× before +/-)
+4. The result after evaluation must equal the value after the = sign
+
+Question: Prove or disprove that for all n > 3, at least one valid grid G exists.
+
+Approach 1 - Constructive Proof:
+Show an explicit construction algorithm that always produces a valid grid for any n > 3.
+
+Approach 2 - Existence via Example:
+Demonstrate that if a valid grid exists for n=4, we can extend it to any larger n.
+
+Approach 3 - Counterexample:
+Find some n > 3 for which no valid grid can be constructed.
+
+Please formalize this problem and provide:
+1. A rigorous proof of existence (if true)
+2. A counterexample (if false)
+3. The computational complexity of finding solutions

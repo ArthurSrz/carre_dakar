@@ -1,0 +1,23 @@
+Carré de Dakar Existence Theorem
+
+Problem Statement:
+The "Carré de Dakar" is a mathematical puzzle where we must fill an n×n grid
+with natural numbers and arithmetic operators (+, -, ×, =) such that:
+1. Every row forms one or more valid arithmetic equations
+2. Every column forms one or more valid arithmetic equations
+3. An equation has the form: number operator number ... = result
+
+Question:
+For every integer n > 3, does there always exist at least one valid way to
+fill the grid?
+
+Prove or disprove:
+∀n ∈ ℕ, n > 3 ⟹ ∃ valid n×n Carré de Dakar configuration
+
+Constructive approach:
+Show that we can build a valid grid using simple patterns:
+- Base pattern: a + b = c where c = a + b
+- Tile the grid with 5×5 blocks containing valid equations
+- Ensure row and column equation validity at block boundaries
+
+Expected result: TRUE - solutions always exist for n > 3
