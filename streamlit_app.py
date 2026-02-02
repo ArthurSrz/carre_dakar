@@ -58,9 +58,19 @@ with st.sidebar:
     st.subheader("Generation Mode")
     mode = st.radio(
         "Select mode:",
-        ["Addition", "Multiplication", "Mixed (n=6 only)"],
-        help="Mixed mode uses ALL 4 operators (+, -, ×, /) and only works for 6×6 grids"
+        ["Addition", "Multiplication", "Mixed (ALL operators)"],
+        help="Mixed mode uses ALL 4 operators (+, -, ×, /). For n=6, uses proven construction. For other sizes, uses heuristic search (may require multiple attempts)."
     )
+
+    # Warning for mixed mode with n≠6
+    if mode == "Mixed (ALL operators)" and st.session_state.n != 6:
+        st.warning(f"""
+        ⚠️ **Experimental Mode**
+
+        Mixed operators for {st.session_state.n}×{st.session_state.n} uses randomized search.
+        Only the 6×6 pattern has been mathematically proven.
+        Generation may require multiple attempts or fail.
+        """, icon="🧪")
 
     # Generate button (text changes based on state)
     button_text = "🎲 Generate Another Grid" if 'grid' in st.session_state else "🎲 Generate Grid"
@@ -228,15 +238,13 @@ if st.session_state.generate:
                 mode_key = "addition"
             elif mode == "Multiplication":
                 mode_key = "multiplication"
-            else:  # Mixed
-                if n == 6:
-                    mode_key = "mixed"
-                else:
-                    st.warning(f"⚠️ Mixed mode only works for n=6. Using multiplication for {n}×{n} instead.")
-                    mode_key = "multiplication"
+            else:  # Mixed (ALL operators)
+                mode_key = "mixed"
 
             # Use retry logic to ensure valid random grid
-            success = generator.generate_with_retry(mode=mode_key, max_attempts=10)
+            # For mixed mode with n≠6, use more attempts since it's heuristic
+            max_attempts = 20 if (mode_key == "mixed" and n != 6) else 10
+            success = generator.generate_with_retry(mode=mode_key, max_attempts=max_attempts)
         except Exception as e:
             st.error(f"❌ Generation failed: {str(e)}")
             success = False
@@ -246,9 +254,18 @@ if st.session_state.generate:
             st.session_state.n = generator.n
             st.session_state.mode = mode
             st.session_state.generation_count += 1
-            st.success(f"✅ Grid #{st.session_state.generation_count} generated successfully!")
+
+            # Success message with context for experimental modes
+            if mode_key == "mixed" and n != 6:
+                st.success(f"✅ Grid #{st.session_state.generation_count} generated successfully! (Found valid solution through heuristic search)")
+            else:
+                st.success(f"✅ Grid #{st.session_state.generation_count} generated successfully!")
         else:
-            st.error("❌ Grid generation failed validation after 10 attempts. Please try again.")
+            # Failure message with context
+            if mode_key == "mixed" and n != 6:
+                st.error(f"❌ Grid generation failed validation after {max_attempts} attempts. The constraint system may have no solution for this size/operator combination. Try again or use a different mode.")
+            else:
+                st.error(f"❌ Grid generation failed validation after {max_attempts} attempts. Please try again.")
 
     # Reset generate flag
     st.session_state.generate = False
@@ -262,7 +279,14 @@ if 'grid' in st.session_state:
     n = st.session_state.n
     mode_used = st.session_state.get('mode', 'Unknown')
     st.markdown(f"### Generated {n}×{n} Grid ({mode_used} Mode)")
-    st.caption(f"🔬 Aristotle-proof-compliant • Grid #{st.session_state.generation_count}")
+
+    # Different caption for proven vs. heuristic constructions
+    if mode_used == "Mixed (ALL operators)" and n == 6:
+        st.caption(f"🔬 Mathematically proven construction • Grid #{st.session_state.generation_count}")
+    elif mode_used == "Mixed (ALL operators)" and n != 6:
+        st.caption(f"🧪 Heuristically discovered construction • Grid #{st.session_state.generation_count}")
+    else:
+        st.caption(f"🔬 Aristotle-proof-compliant • Grid #{st.session_state.generation_count}")
 
     # Render the grid
     render_grid(st.session_state.grid, n)
