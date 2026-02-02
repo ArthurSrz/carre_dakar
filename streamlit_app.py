@@ -23,6 +23,8 @@ if 'n' not in st.session_state:
     st.session_state.n = 4
 if 'generate' not in st.session_state:
     st.session_state.generate = False
+if 'generation_count' not in st.session_state:
+    st.session_state.generation_count = 0
 
 # Title
 st.title("🎲 Carré de Dakar Grid Generator")
@@ -60,8 +62,9 @@ with st.sidebar:
         help="Mixed mode uses ALL 4 operators (+, -, ×, /) and only works for 6×6 grids"
     )
 
-    # Generate button
-    if st.button("🎲 Generate Grid", type="primary", use_container_width=True):
+    # Generate button (text changes based on state)
+    button_text = "🎲 Generate Another Grid" if 'grid' in st.session_state else "🎲 Generate Grid"
+    if st.button(button_text, type="primary", use_container_width=True):
         st.session_state.generate = True
 
     # Info box
@@ -217,19 +220,23 @@ if st.session_state.generate:
         # Create generator
         generator = DenseBidirectionalGenerator(n)
 
-        # Generate based on mode
+        # Generate based on mode using retry logic
         success = False
         try:
+            # Determine mode key
             if mode == "Addition":
-                success = generator.generate_addition_grid()
+                mode_key = "addition"
             elif mode == "Multiplication":
-                success = generator.generate_multiplication_grid()
+                mode_key = "multiplication"
             else:  # Mixed
                 if n == 6:
-                    success = generator.generate_mixed_operators_6x6()
+                    mode_key = "mixed"
                 else:
                     st.warning(f"⚠️ Mixed mode only works for n=6. Using multiplication for {n}×{n} instead.")
-                    success = generator.generate_multiplication_grid()
+                    mode_key = "multiplication"
+
+            # Use retry logic to ensure valid random grid
+            success = generator.generate_with_retry(mode=mode_key, max_attempts=10)
         except Exception as e:
             st.error(f"❌ Generation failed: {str(e)}")
             success = False
@@ -238,9 +245,10 @@ if st.session_state.generate:
             st.session_state.grid = generator.grid
             st.session_state.n = generator.n
             st.session_state.mode = mode
-            st.success(f"✅ Successfully generated {n}×{n} {mode.lower()} grid!")
+            st.session_state.generation_count += 1
+            st.success(f"✅ Grid #{st.session_state.generation_count} generated successfully!")
         else:
-            st.error("❌ Grid generation failed validation. Please try again.")
+            st.error("❌ Grid generation failed validation after 10 attempts. Please try again.")
 
     # Reset generate flag
     st.session_state.generate = False
@@ -250,10 +258,11 @@ if st.session_state.generate:
 if 'grid' in st.session_state:
     st.markdown("---")
 
-    # Show grid info
+    # Show grid info with proof compliance notice
     n = st.session_state.n
     mode_used = st.session_state.get('mode', 'Unknown')
     st.markdown(f"### Generated {n}×{n} Grid ({mode_used} Mode)")
+    st.caption(f"🔬 Aristotle-proof-compliant • Grid #{st.session_state.generation_count}")
 
     # Render the grid
     render_grid(st.session_state.grid, n)

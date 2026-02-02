@@ -76,8 +76,8 @@ class DenseBidirectionalGenerator:
         for i in range(self.n):
             for j in range(self.n):
                 if self.is_number_position(i, j):
-                    # Base values: use 2 for variety (2*2=4, etc.)
-                    val = 2
+                    # Random values 1-5 for variety (limited range to avoid overflow)
+                    val = random.randint(1, 5)
                     self.grid[i][j] = Cell(str(val), CellType.NUMBER)
                 else:
                     # Operators: = at boundary positions
@@ -105,7 +105,8 @@ class DenseBidirectionalGenerator:
         for i in range(self.n):
             for j in range(self.n):
                 if self.is_number_position(i, j):
-                    val = 1
+                    # Random values 1-9 for operands
+                    val = random.randint(1, 9)
                     self.grid[i][j] = Cell(str(val), CellType.NUMBER)
                 else:
                     if (i % 2 == 0 and j % 4 == 3) or (j % 2 == 0 and i % 4 == 3):
@@ -192,19 +193,22 @@ class DenseBidirectionalGenerator:
 
         # For other sizes, use a cyclic operator pattern
         operators = ['+', '-', 'x', '/']
+        # Randomize operator order for variety
+        random.shuffle(operators)
         op_idx = 0
 
         for i in range(self.n):
             for j in range(self.n):
                 if self.is_number_position(i, j):
-                    # Start with 2 for division compatibility
-                    self.grid[i][j] = Cell("2", CellType.NUMBER)
+                    # Random values 2-5 for division compatibility
+                    val = random.randint(2, 5)
+                    self.grid[i][j] = Cell(str(val), CellType.NUMBER)
                 else:
                     # Place = signs at equation boundaries
                     if (i % 2 == 0 and j % 4 == 3) or (j % 2 == 0 and i % 4 == 3):
                         self.grid[i][j] = Cell("=", CellType.OPERATOR)
                     else:
-                        # Cycle through operators
+                        # Cycle through randomized operators
                         self.grid[i][j] = Cell(operators[op_idx % 4], CellType.OPERATOR)
                         op_idx += 1
 
@@ -460,6 +464,47 @@ class DenseBidirectionalGenerator:
             "num_equations": num_equations,
             "density": num_equations / total_cells if total_cells > 0 else 0
         }
+
+    def generate_with_retry(self, mode: str, max_attempts: int = 10) -> bool:
+        """
+        Generate grid with retry logic for randomization.
+
+        Ensures Aristotle proof compliance by validating each attempt.
+        Random values might occasionally create invalid equations (e.g., division issues),
+        so we retry until we get a valid grid.
+
+        Args:
+            mode: Generation mode ("addition", "multiplication", or "mixed")
+            max_attempts: Maximum number of attempts before giving up
+
+        Returns:
+            True if a valid grid was generated, False otherwise
+        """
+        for attempt in range(1, max_attempts + 1):
+            # Reset grid for each attempt
+            self.grid = [[None] * self.n for _ in range(self.n)]
+
+            # Try to generate based on mode
+            if mode == "addition":
+                success = self.generate_addition_grid()
+            elif mode == "multiplication":
+                success = self.generate_multiplication_grid()
+            elif mode == "mixed":
+                if self.n == 6:
+                    success = self.generate_mixed_operators_6x6()
+                else:
+                    success = self.generate_mixed_operators_generic()
+            else:
+                print(f"❌ Unknown mode: {mode}")
+                return False
+
+            if success:
+                if attempt > 1:
+                    print(f"✅ Valid grid found on attempt {attempt}/{max_attempts}")
+                return True
+
+        print(f"❌ Failed to generate valid grid after {max_attempts} attempts")
+        return False
 
 
 def demonstrate():
